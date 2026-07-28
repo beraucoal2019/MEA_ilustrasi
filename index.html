@@ -930,13 +930,19 @@ html>body{padding:0}</style>
         fieldNames.forEach((fieldName) => {
           const block = document.createElement("div");
           block.className = "field-block";
-          const term = document.createElement("dt");
-          term.textContent = fieldName;
-          const detail = document.createElement("dd");
-          detail.textContent = row[fieldName] || "—";
-          block.append(term, detail);
-          fields.append(block);
-        });
+        const term = document.createElement("dt");
+        term.textContent = fieldName;
+        const detail = document.createElement("dd");
+        const value = row[fieldName] || "—";
+        const phaseList = buildPhaseList(value);
+        if (phaseList) {
+          detail.append(phaseList);
+        } else {
+          detail.textContent = value;
+        }
+        block.append(term, detail);
+        fields.append(block);
+      });
 
         grid.querySelectorAll("button").forEach((button, buttonIndex) => {
           button.setAttribute("aria-pressed", buttonIndex === index ? "true" : "false");
@@ -948,6 +954,34 @@ html>body{padding:0}</style>
             preload.src = rows[nextIndex].image;
           }
         });
+      }
+
+      function buildPhaseList(value) {
+        const labels = ["Data collection", "Training", "Inference"];
+        const phases = labels.map((label, index) => {
+          const marker = label + ":";
+          const start = value.indexOf(marker);
+          if (start < 0) return null;
+          const contentStart = start + marker.length;
+          const nextLabel = labels[index + 1];
+          const nextStart = nextLabel ? value.indexOf(nextLabel + ":", contentStart) : value.length;
+          return {
+            label,
+            text: value.slice(contentStart, nextStart < 0 ? value.length : nextStart).trim()
+          };
+        }).filter(Boolean);
+        if (phases.length < 2) return null;
+
+        const list = document.createElement("ul");
+        list.className = "phase-list";
+        phases.forEach((phase) => {
+          const item = document.createElement("li");
+          const label = document.createElement("strong");
+          label.textContent = phase.label + ": ";
+          item.append(label, document.createTextNode(phase.text));
+          list.append(item);
+        });
+        return list;
       }
 
       showRow(0);
@@ -1017,6 +1051,28 @@ html>body{padding:0}</style>
     #prompt-image-dashboard dd {
       margin: 0;
       white-space: pre-wrap;
+    }
+
+    #prompt-image-dashboard .phase-list {
+      display: block;
+      list-style-type: disc !important;
+      list-style-position: outside !important;
+      margin: 0;
+      padding-left: 24px !important;
+      white-space: normal;
+    }
+
+    #prompt-image-dashboard .phase-list li {
+      display: list-item !important;
+      margin-bottom: 8px;
+    }
+
+    #prompt-image-dashboard .phase-list li:last-child {
+      margin-bottom: 0;
+    }
+
+    #prompt-image-dashboard .phase-list strong {
+      font-weight: 500;
     }
 
     @media (max-width: 600px) {
